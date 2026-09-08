@@ -4,7 +4,7 @@ MiniDB is an educational relational database management system implemented from 
 
 ## Current Status
 
-Phase 7 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, `TableHeap`, a persistent catalog, the SQL lexer, and a typed recursive-descent parser with AST nodes. Query planning and execution are not implemented yet.
+Phase 8 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, `TableHeap`, a persistent catalog, the SQL lexer, a typed recursive-descent parser with AST nodes, and basic typed plan nodes. Query execution is not implemented yet.
 
 Planned components include:
 
@@ -42,7 +42,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-The Phase 1 disk-manager test checks page allocation, persistence across a close and reopen, page counting, and invalid page rejection. Phase 2 tests check LRU ordering, pinned-page protection, dirty-page write-back, eviction, and deletion. Phase 3 tests check schema lookup, typed values, tuple serialization round trips, RIDs, and malformed-data rejection. Phase 4 tests check slotted-page insertion, tuple deletion, multi-page heap growth, RID lookup, and flushing. Phase 5 tests check catalog creation, duplicate-table rejection, metadata updates, and restart persistence. Phase 6 tests check SQL keyword recognition, literals, comments, operators, escaped strings, and lexical errors. Phase 7 tests check AST construction for all supported statements, typed literals, logical WHERE expressions, and syntax errors.
+The Phase 1 disk-manager test checks page allocation, persistence across a close and reopen, page counting, and invalid page rejection. Phase 2 tests check LRU ordering, pinned-page protection, dirty-page write-back, eviction, and deletion. Phase 3 tests check schema lookup, typed values, tuple serialization round trips, RIDs, and malformed-data rejection. Phase 4 tests check slotted-page insertion, tuple deletion, multi-page heap growth, RID lookup, and flushing. Phase 5 tests check catalog creation, duplicate-table rejection, metadata updates, and restart persistence. Phase 6 tests check SQL keyword recognition, literals, comments, operators, escaped strings, and lexical errors. Phase 7 tests check AST construction for all supported statements, typed literals, logical WHERE expressions, and syntax errors. Phase 8 tests check plan selection for scans, filters, DML, and DDL.
 
 `TableHeap` still keeps its active page list in memory; the catalog now persists the authoritative table metadata and page list, but automatic reconstruction of `TableHeap` instances from catalog entries will be integrated with the execution layer.
 
