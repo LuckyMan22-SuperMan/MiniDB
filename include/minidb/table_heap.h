@@ -11,6 +11,11 @@
 
 namespace minidb {
 
+struct TableRecord {
+    RID rid;
+    Tuple tuple;
+};
+
 class TableHeap {
 public:
     TableHeap(BufferPoolManager& buffer_pool, Schema schema);
@@ -23,6 +28,8 @@ public:
     [[nodiscard]] std::optional<RID> insert_tuple(const Tuple& tuple);
     [[nodiscard]] std::optional<Tuple> get_tuple(const RID& rid);
     [[nodiscard]] std::vector<Tuple> scan();
+    [[nodiscard]] std::vector<TableRecord> scan_records();
+    [[nodiscard]] bool update_tuple(const RID& rid, const Tuple& tuple);
     [[nodiscard]] bool delete_tuple(const RID& rid);
     void flush();
 

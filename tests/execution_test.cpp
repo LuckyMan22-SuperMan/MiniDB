@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <filesystem>
+#include <stdexcept>
 #include <string>
 
 using namespace std;
@@ -56,6 +57,31 @@ int main() {
         const auto greater_than = engine.execute(minidb::Parser::parse_sql(
             "SELECT id FROM students WHERE id > 1;"));
         assert(greater_than.rows.size() == 2);
+
+        const auto updated = engine.execute(minidb::Parser::parse_sql(
+            "UPDATE students SET name = 'A' WHERE id = 2;"));
+        assert(updated.affected_rows == 1);
+        const auto updated_row = engine.execute(minidb::Parser::parse_sql(
+            "SELECT name FROM students WHERE id = 2;"));
+        assert(updated_row.rows.size() == 1);
+        assert(updated_row.rows[0][0].as_varchar() == "A");
+
+        bool rejected_oversized_update = false;
+        try {
+            const auto ignored = engine.execute(minidb::Parser::parse_sql(
+                "UPDATE students SET name = 'This name is too long' WHERE id = 2;"));
+            (void)ignored;
+        } catch (const runtime_error&) {
+            rejected_oversized_update = true;
+        }
+        assert(rejected_oversized_update);
+
+        const auto deleted = engine.execute(minidb::Parser::parse_sql(
+            "DELETE FROM students WHERE id = 3;"));
+        assert(deleted.affected_rows == 1);
+        const auto remaining = engine.execute(minidb::Parser::parse_sql(
+            "SELECT id FROM students;"));
+        assert(remaining.rows.size() == 2);
         buffer_pool.flush_all_pages();
     }
 
@@ -66,7 +92,7 @@ int main() {
         minidb::ExecutionEngine engine(buffer_pool, catalog);
         const auto restored = engine.execute(minidb::Parser::parse_sql(
             "SELECT name FROM students WHERE active = TRUE;"));
-        assert(restored.rows.size() == 2);
+        assert(restored.rows.size() == 1);
         assert(restored.rows[0][0].as_varchar() == "Lakshya");
     }
 

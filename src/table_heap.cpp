@@ -67,6 +67,14 @@ std::optional<Tuple> TableHeap::get_tuple(const RID& rid) {
 
 std::vector<Tuple> TableHeap::scan() {
     std::vector<Tuple> tuples;
+    for (const TableRecord& record : scan_records()) {
+        tuples.push_back(record.tuple);
+    }
+    return tuples;
+}
+
+std::vector<TableRecord> TableHeap::scan_records() {
+    std::vector<TableRecord> records;
     for (const PageId page_id : page_ids_) {
         Page* page = buffer_pool_.fetch_page(page_id);
         if (page == nullptr) {
@@ -78,13 +86,26 @@ std::vector<Tuple> TableHeap::scan() {
         for (std::uint16_t slot_id = 0; slot_id < slots; ++slot_id) {
             const std::optional<Tuple> tuple = table_page.get_tuple(schema_, slot_id);
             if (tuple.has_value()) {
-                tuples.push_back(*tuple);
+                records.push_back(TableRecord{RID{page_id, slot_id}, *tuple});
             }
         }
         const bool unpinned = buffer_pool_.unpin_page(page_id, false);
         (void)unpinned;
     }
-    return tuples;
+    return records;
+}
+
+bool TableHeap::update_tuple(const RID& rid, const Tuple& tuple) {
+    Page* page = buffer_pool_.fetch_page(rid.page_id);
+    if (page == nullptr) {
+        return false;
+    }
+
+    TablePage table_page(*page);
+    const bool updated = table_page.update_tuple(tuple, schema_, rid.slot_id);
+    const bool unpinned = buffer_pool_.unpin_page(rid.page_id, updated);
+    (void)unpinned;
+    return updated;
 }
 
 bool TableHeap::delete_tuple(const RID& rid) {

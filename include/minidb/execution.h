@@ -29,6 +29,8 @@ private:
     [[nodiscard]] TableHeap& table(const std::string& name);
     [[nodiscard]] QueryResult execute_select(const SeqScanPlan& scan,
                                               const Expression* predicate);
+    [[nodiscard]] QueryResult execute_update(const UpdatePlan& update);
+    [[nodiscard]] QueryResult execute_delete(const DeletePlan& delete_plan);
     [[nodiscard]] bool evaluate_predicate(const Expression& expression,
                                           const Tuple& tuple, const Schema& schema) const;
     [[nodiscard]] Value evaluate_value(const Expression& expression,

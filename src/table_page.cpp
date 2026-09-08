@@ -57,6 +57,27 @@ bool TablePage::insert_tuple(const Tuple& tuple, const Schema& schema, std::uint
     return true;
 }
 
+bool TablePage::update_tuple(const Tuple& tuple, const Schema& schema, std::uint16_t slot_id) {
+    if (!has_valid_header() || slot_id >= slot_count()) {
+        return false;
+    }
+
+    const Slot slot = slot_at(slot_id);
+    if (slot.length == 0) {
+        return false;
+    }
+    const std::vector<std::byte> bytes = tuple.serialize(schema);
+    if (bytes.size() > slot.length) {
+        return false;
+    }
+    std::memcpy(page_.data() + slot.offset, bytes.data(), bytes.size());
+    if (bytes.size() < slot.length) {
+        std::memset(page_.data() + slot.offset + bytes.size(), 0, slot.length - bytes.size());
+    }
+    set_slot(slot_id, Slot{slot.offset, static_cast<std::uint16_t>(bytes.size())});
+    return true;
+}
+
 std::optional<Tuple> TablePage::get_tuple(const Schema& schema, std::uint16_t slot_id) const {
     if (!has_valid_header() || slot_id >= slot_count()) {
         return std::nullopt;

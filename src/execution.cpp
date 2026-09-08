@@ -52,11 +52,47 @@ QueryResult ExecutionEngine::execute(const Statement& statement) {
             return execute_select(scan, filter.predicate.get());
         }
         case PlanType::Update:
+            return execute_update(get<UpdatePlan>(plan.details));
         case PlanType::Delete:
+            return execute_delete(get<DeletePlan>(plan.details));
         case PlanType::CreateIndex:
-            throw logic_error("This plan type is not executable in Phase 9");
+            throw logic_error("CREATE INDEX is not executable in Phase 11");
     }
     throw logic_error("Unknown plan type");
+}
+
+QueryResult ExecutionEngine::execute_update(const UpdatePlan& update) {
+    TableHeap& heap = table(update.table_name);
+    const size_t column_index = heap.schema().column_index(update.column_name);
+    size_t affected_rows = 0;
+    for (const TableRecord& record : heap.scan_records()) {
+        if (update.predicate != nullptr &&
+            !evaluate_predicate(*update.predicate, record.tuple, heap.schema())) {
+            continue;
+        }
+        vector<Value> values = record.tuple.values();
+        values[column_index] = update.value;
+        if (!heap.update_tuple(record.rid, Tuple(std::move(values)))) {
+            throw runtime_error("Updated tuple is larger than its existing slot");
+        }
+        ++affected_rows;
+    }
+    return QueryResult{ {}, {}, affected_rows };
+}
+
+QueryResult ExecutionEngine::execute_delete(const DeletePlan& delete_plan) {
+    TableHeap& heap = table(delete_plan.table_name);
+    size_t affected_rows = 0;
+    for (const TableRecord& record : heap.scan_records()) {
+        if (delete_plan.predicate != nullptr &&
+            !evaluate_predicate(*delete_plan.predicate, record.tuple, heap.schema())) {
+            continue;
+        }
+        if (heap.delete_tuple(record.rid)) {
+            ++affected_rows;
+        }
+    }
+    return QueryResult{ {}, {}, affected_rows };
 }
 
 TableHeap& ExecutionEngine::table(const string& name) {

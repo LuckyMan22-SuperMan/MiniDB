@@ -18,6 +18,8 @@ public:
 
     [[nodiscard]] bool insert_tuple(const Tuple& tuple, const Schema& schema,
                                     std::uint16_t& slot_id);
+    [[nodiscard]] bool update_tuple(const Tuple& tuple, const Schema& schema,
+                                    std::uint16_t slot_id);
     [[nodiscard]] std::optional<Tuple> get_tuple(const Schema& schema,
                                                  std::uint16_t slot_id) const;
     [[nodiscard]] bool delete_tuple(std::uint16_t slot_id);
