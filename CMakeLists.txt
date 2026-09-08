@@ -12,6 +12,8 @@ enable_testing()
 add_executable(minidb
     src/main.cpp
     src/disk_manager.cpp
+    src/lru_replacer.cpp
+    src/buffer_pool_manager.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -56,3 +58,39 @@ target_include_directories(minidb_disk_manager_tests PRIVATE
 )
 
 add_test(NAME disk_manager COMMAND minidb_disk_manager_tests)
+
+add_executable(minidb_lru_tests
+    src/lru_replacer.cpp
+    tests/lru_replacer_test.cpp
+)
+
+target_compile_options(minidb_lru_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_lru_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME lru_replacer COMMAND minidb_lru_tests)
+
+add_executable(minidb_buffer_pool_tests
+    src/disk_manager.cpp
+    src/lru_replacer.cpp
+    src/buffer_pool_manager.cpp
+    tests/buffer_pool_manager_test.cpp
+)
+
+target_compile_options(minidb_buffer_pool_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_buffer_pool_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME buffer_pool_manager COMMAND minidb_buffer_pool_tests)

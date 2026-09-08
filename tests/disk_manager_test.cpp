@@ -5,9 +5,11 @@
 #include <filesystem>
 #include <string>
 
+using namespace std;
+
 int main() {
-    const auto database_path = std::filesystem::temp_directory_path() / "minidb_phase1_test.db";
-    std::filesystem::remove(database_path);
+    const auto database_path = filesystem::temp_directory_path() / "minidb_phase1_test.db";
+    filesystem::remove(database_path);
 
     {
         minidb::DiskManager disk_manager(database_path);
@@ -19,9 +21,9 @@ int main() {
 
         minidb::Page page;
         page.set_id(page_id);
-        const std::string message = "persistent page data";
-        for (std::size_t index = 0; index < message.size(); ++index) {
-            page.data()[index] = static_cast<std::byte>(message[index]);
+        const string message = "persistent page data";
+        for (size_t index = 0; index < message.size(); ++index) {
+            page.data()[index] = static_cast<byte>(message[index]);
         }
         disk_manager.write_page(page_id, page);
     }
@@ -31,21 +33,21 @@ int main() {
         minidb::Page page;
         disk_manager.read_page(0, page);
 
-        const std::string expected = "persistent page data";
-        for (std::size_t index = 0; index < expected.size(); ++index) {
-            assert(page.data()[index] == static_cast<std::byte>(expected[index]));
+        const string expected = "persistent page data";
+        for (size_t index = 0; index < expected.size(); ++index) {
+            assert(page.data()[index] == static_cast<byte>(expected[index]));
         }
         assert(page.id() == 0);
 
         bool rejected_invalid_page = false;
         try {
             disk_manager.read_page(1, page);
-        } catch (const std::out_of_range&) {
+        } catch (const out_of_range&) {
             rejected_invalid_page = true;
         }
         assert(rejected_invalid_page);
     }
 
-    std::filesystem::remove(database_path);
+    filesystem::remove(database_path);
     return 0;
 }

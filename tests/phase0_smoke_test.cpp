@@ -1,6 +1,8 @@
 #include <iostream>
 
+using namespace std;
+
 int main() {
-    std::cout << "Phase 0 smoke test passed" << '\n';
+    cout << "Phase 0 smoke test passed" << '\n';
     return 0;
 }
