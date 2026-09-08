@@ -4,7 +4,7 @@ MiniDB is an educational relational database management system implemented from 
 
 ## Current Status
 
-Phase 0 is complete when the skeleton configures, builds, runs, and passes its smoke test. No database functionality has been implemented yet.
+Phase 1 implements the fixed-size `Page` abstraction and file-backed `DiskManager`. The buffer pool, replacement policy, and higher-level storage layers are not implemented yet.
 
 Planned components include:
 
@@ -41,6 +41,8 @@ Planned components include:
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
+
+The Phase 1 disk-manager test checks page allocation, persistence across a close and reopen, page counting, and invalid page rejection.
 
 ## Run
 

@@ -11,6 +11,7 @@ enable_testing()
 
 add_executable(minidb
     src/main.cpp
+    src/disk_manager.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -38,3 +39,20 @@ target_include_directories(minidb_phase0_tests PRIVATE
 )
 
 add_test(NAME phase0_smoke COMMAND minidb_phase0_tests)
+
+add_executable(minidb_disk_manager_tests
+    src/disk_manager.cpp
+    tests/disk_manager_test.cpp
+)
+
+target_compile_options(minidb_disk_manager_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_disk_manager_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME disk_manager COMMAND minidb_disk_manager_tests)
