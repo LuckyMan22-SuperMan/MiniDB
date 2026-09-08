@@ -20,6 +20,7 @@ add_executable(minidb
     src/table_page.cpp
     src/table_heap.cpp
     src/catalog.cpp
+    src/lexer.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -162,3 +163,20 @@ target_include_directories(minidb_catalog_tests PRIVATE
 )
 
 add_test(NAME catalog COMMAND minidb_catalog_tests)
+
+add_executable(minidb_lexer_tests
+    src/lexer.cpp
+    tests/lexer_test.cpp
+)
+
+target_compile_options(minidb_lexer_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_lexer_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME lexer COMMAND minidb_lexer_tests)
