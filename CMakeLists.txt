@@ -24,6 +24,7 @@ add_executable(minidb
     src/parser.cpp
     src/planner.cpp
     src/execution.cpp
+    src/b_plus_tree.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -252,3 +253,23 @@ target_include_directories(minidb_execution_tests PRIVATE
 )
 
 add_test(NAME execution COMMAND minidb_execution_tests)
+
+add_executable(minidb_b_plus_tree_tests
+    src/disk_manager.cpp
+    src/lru_replacer.cpp
+    src/buffer_pool_manager.cpp
+    src/b_plus_tree.cpp
+    tests/b_plus_tree_test.cpp
+)
+
+target_compile_options(minidb_b_plus_tree_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_b_plus_tree_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME b_plus_tree COMMAND minidb_b_plus_tree_tests)
