@@ -9,6 +9,10 @@ namespace minidb {
 TableHeap::TableHeap(BufferPoolManager& buffer_pool, Schema schema)
     : buffer_pool_(buffer_pool), schema_(std::move(schema)) {}
 
+TableHeap::TableHeap(BufferPoolManager& buffer_pool, Schema schema,
+                     std::vector<PageId> page_ids)
+    : buffer_pool_(buffer_pool), schema_(std::move(schema)), page_ids_(std::move(page_ids)) {}
+
 std::optional<RID> TableHeap::insert_tuple(const Tuple& tuple) {
     for (const PageId page_id : page_ids_) {
         Page* page = buffer_pool_.fetch_page(page_id);
@@ -59,6 +63,28 @@ std::optional<Tuple> TableHeap::get_tuple(const RID& rid) {
     const bool unpinned = buffer_pool_.unpin_page(rid.page_id, false);
     (void)unpinned;
     return tuple;
+}
+
+std::vector<Tuple> TableHeap::scan() {
+    std::vector<Tuple> tuples;
+    for (const PageId page_id : page_ids_) {
+        Page* page = buffer_pool_.fetch_page(page_id);
+        if (page == nullptr) {
+            continue;
+        }
+
+        TablePage table_page(*page);
+        const std::uint16_t slots = table_page.slot_count();
+        for (std::uint16_t slot_id = 0; slot_id < slots; ++slot_id) {
+            const std::optional<Tuple> tuple = table_page.get_tuple(schema_, slot_id);
+            if (tuple.has_value()) {
+                tuples.push_back(*tuple);
+            }
+        }
+        const bool unpinned = buffer_pool_.unpin_page(page_id, false);
+        (void)unpinned;
+    }
+    return tuples;
 }
 
 bool TableHeap::delete_tuple(const RID& rid) {

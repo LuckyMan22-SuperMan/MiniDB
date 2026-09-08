@@ -23,6 +23,7 @@ add_executable(minidb
     src/lexer.cpp
     src/parser.cpp
     src/planner.cpp
+    src/execution.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -222,3 +223,32 @@ target_include_directories(minidb_planner_tests PRIVATE
 )
 
 add_test(NAME planner COMMAND minidb_planner_tests)
+
+add_executable(minidb_execution_tests
+    src/disk_manager.cpp
+    src/lru_replacer.cpp
+    src/buffer_pool_manager.cpp
+    src/value.cpp
+    src/schema.cpp
+    src/tuple.cpp
+    src/table_page.cpp
+    src/table_heap.cpp
+    src/catalog.cpp
+    src/lexer.cpp
+    src/parser.cpp
+    src/planner.cpp
+    src/execution.cpp
+    tests/execution_test.cpp
+)
+
+target_compile_options(minidb_execution_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_execution_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME execution COMMAND minidb_execution_tests)
