@@ -70,6 +70,18 @@ void IndexManager::update_tuple(const string& table_name, const Tuple& old_tuple
     insert_tuple(table_name, new_tuple, rid);
 }
 
+optional<RID> IndexManager::search(const string& table_name, const string& column_name,
+                                   int32_t key) const {
+    for (const IndexMetadata& metadata : catalog_.indexes_for_table(table_name)) {
+        if (metadata.column_name == column_name) {
+            const auto found = trees_.find(metadata.name);
+            if (found == trees_.end()) throw runtime_error("Index is not loaded: " + metadata.name);
+            return found->second->search(key);
+        }
+    }
+    throw invalid_argument("No index exists for column: " + column_name);
+}
+
 int32_t IndexManager::key_for(const IndexMetadata& metadata, const Tuple& tuple) const {
     const optional<TableMetadata> table_metadata = catalog_.get_table(metadata.table_name);
     if (!table_metadata.has_value()) throw invalid_argument("Unknown table: " + metadata.table_name);

@@ -9,11 +9,18 @@
 
 namespace minidb {
 
-enum class PlanType { SeqScan, Filter, Insert, Update, Delete, CreateTable, CreateIndex };
+enum class PlanType { SeqScan, IndexScan, Filter, Insert, Update, Delete, CreateTable, CreateIndex };
 
 struct SeqScanPlan {
     std::string table_name;
     std::vector<std::string> columns;
+};
+
+struct IndexScanPlan {
+    std::string table_name;
+    std::vector<std::string> columns;
+    std::string index_name;
+    std::int32_t key;
 };
 
 struct FilterPlan {
@@ -49,7 +56,7 @@ struct CreateIndexPlan {
     std::string column_name;
 };
 
-using PlanDetails = std::variant<SeqScanPlan, FilterPlan, InsertPlan, UpdatePlan,
+using PlanDetails = std::variant<SeqScanPlan, IndexScanPlan, FilterPlan, InsertPlan, UpdatePlan,
                                  DeletePlan, CreateTablePlan, CreateIndexPlan>;
 
 struct PlanNode {

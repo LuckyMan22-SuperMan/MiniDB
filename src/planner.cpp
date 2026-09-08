@@ -7,15 +7,15 @@ namespace minidb {
 
 using namespace std;
 
-PlanNode Planner::make_plan(const Statement& statement) {
-    return visit([](const auto& typed_statement) -> PlanNode {
+PlanNode Planner::make_plan(const Statement& statement, const Catalog* catalog) {
+    return visit([catalog](const auto& typed_statement) -> PlanNode {
         using StatementType = decay_t<decltype(typed_statement)>;
         if constexpr (is_same_v<StatementType, CreateTableStatement>) {
             return plan_create_table(typed_statement);
         } else if constexpr (is_same_v<StatementType, InsertStatement>) {
             return plan_insert(typed_statement);
         } else if constexpr (is_same_v<StatementType, SelectStatement>) {
-            return plan_select(typed_statement);
+            return plan_select(typed_statement, catalog);
         } else if constexpr (is_same_v<StatementType, UpdateStatement>) {
             return plan_update(typed_statement);
         } else if constexpr (is_same_v<StatementType, DeleteStatement>) {
@@ -40,7 +40,27 @@ PlanNode Planner::plan_insert(const InsertStatement& statement) {
     return PlanNode{PlanType::Insert, InsertPlan{statement.table_name, statement.values}};
 }
 
-PlanNode Planner::plan_select(const SelectStatement& statement) {
+PlanNode Planner::plan_select(const SelectStatement& statement, const Catalog* catalog) {
+    if (catalog != nullptr && statement.where != nullptr) {
+        const auto* comparison = get_if<ComparisonExpression>(&statement.where->node);
+        if (comparison != nullptr && comparison->op == ComparisonOperator::Equal) {
+            const auto* column = get_if<ColumnReference>(&comparison->left->node);
+            const auto* literal = get_if<LiteralExpression>(&comparison->right->node);
+            if (column == nullptr || literal == nullptr) {
+                column = get_if<ColumnReference>(&comparison->right->node);
+                literal = get_if<LiteralExpression>(&comparison->left->node);
+            }
+            if (column != nullptr && literal != nullptr && literal->value.type() == Type::Int) {
+                for (const IndexMetadata& index : catalog->indexes_for_table(statement.table_name)) {
+                    if (index.column_name == column->name) {
+                        return PlanNode{PlanType::IndexScan,
+                                        IndexScanPlan{statement.table_name, statement.columns,
+                                                      index.name, literal->value.as_int()}};
+                    }
+                }
+            }
+        }
+    }
     PlanNode scan{PlanType::SeqScan, SeqScanPlan{statement.table_name, statement.columns}};
     if (statement.where == nullptr) {
         return scan;

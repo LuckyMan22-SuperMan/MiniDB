@@ -4,7 +4,7 @@ MiniDB is an educational relational database management system implemented from 
 
 ## Current Status
 
-Phase 15 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, `TableHeap`, a persistent catalog, the SQL lexer, a typed recursive-descent parser with AST nodes, basic typed plan nodes, execution for `CREATE TABLE`, `INSERT`, sequential `SELECT`, robust `WHERE` filtering, `UPDATE`, `DELETE`, and a persistent B+ Tree with leaf splitting, deletion, empty-leaf cleanup, root collapse, and Index Manager synchronization. The interactive CLI and general internal-node rebalancing are not implemented yet.
+Phase 16 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, `TableHeap`, a persistent catalog, the SQL lexer, a typed recursive-descent parser with AST nodes, typed plan nodes including `IndexScan`, execution for `CREATE TABLE`, `INSERT`, sequential or indexed `SELECT`, robust `WHERE` filtering, `UPDATE`, `DELETE`, and a persistent B+ Tree with leaf splitting, deletion, empty-leaf cleanup, root collapse, and Index Manager synchronization. The interactive CLI and general internal-node rebalancing are not implemented yet.
 
 Planned components include:
 
@@ -44,7 +44,7 @@ cmake --build build
 
 The Phase 1 disk-manager test checks page allocation, persistence across a close and reopen, page counting, and invalid page rejection. Phase 2 tests check LRU ordering, pinned-page protection, dirty-page write-back, eviction, and deletion. Phase 3 tests check schema lookup, typed values, tuple serialization round trips, RIDs, and malformed-data rejection. Phase 4 tests check slotted-page insertion, tuple deletion, multi-page heap growth, RID lookup, and flushing. Phase 5 tests check catalog creation, duplicate-table rejection, metadata updates, and restart persistence. Phase 6 tests check SQL keyword recognition, literals, comments, operators, escaped strings, and lexical errors. Phase 7 tests check AST construction for all supported statements, typed literals, logical WHERE expressions, and syntax errors. Phase 8 tests check plan selection for scans, filters, DML, and DDL. Phase 9 tests check execution, sequential scanning, filtering, and restart reads. Phase 10 tests check parenthesized expressions, boolean predicates, comparison operators, and logical precedence. Phase 11 tests check stable-RID updates, deletion, affected-row counts, persistence, and oversized-update errors. Phase 12 tests check sorted index insertion, duplicate rejection, RID search, and index restart persistence. Phase 13 tests force leaf splitting, root routing, multi-page search, and restart reads. Phase 14 tests cover deletion, empty-leaf cleanup, root collapse, and reinsertion. Phase 15 tests check persistent index metadata, SQL `CREATE INDEX`, indexed mutation synchronization, restart loading, and duplicate-key rollback.
 
-Indexes currently support `INT` columns only. Index-aware query planning and index scans are reserved for Phase 16.
+Indexes currently support `INT` columns only. Only simple equality predicates on indexed columns use `IndexScan`; range and compound predicates continue to use sequential scans.
 
 Updates currently require the replacement tuple to fit in the existing slot; larger replacements fail explicitly rather than changing the row's RID. Page compaction and relocation can be added with later storage hardening.
 

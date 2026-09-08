@@ -211,6 +211,7 @@ add_executable(minidb_planner_tests
     src/planner.cpp
     src/value.cpp
     src/schema.cpp
+    src/catalog.cpp
     tests/planner_test.cpp
 )
 

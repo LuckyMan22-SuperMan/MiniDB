@@ -30,6 +30,10 @@ int main() {
         const auto created_index = engine.execute(minidb::Parser::parse_sql(
             "CREATE INDEX idx_students_id ON students(id);"));
         (void)created_index;
+        const auto indexed_select = engine.execute(minidb::Parser::parse_sql(
+            "SELECT name FROM students WHERE id = 1;"));
+        assert(indexed_select.rows.size() == 1);
+        assert(indexed_select.rows[0][0].as_varchar() == "A");
         const auto inserted_third = engine.execute(minidb::Parser::parse_sql(
             "INSERT INTO students VALUES (3, 'C');"));
         assert(inserted_third.affected_rows == 1);

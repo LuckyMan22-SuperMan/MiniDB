@@ -22,7 +22,7 @@ ExecutionEngine::ExecutionEngine(BufferPoolManager& buffer_pool, Catalog& catalo
 }
 
 QueryResult ExecutionEngine::execute(const Statement& statement) {
-    const PlanNode plan = Planner::make_plan(statement);
+    const PlanNode plan = Planner::make_plan(statement, &catalog_);
     switch (plan.type) {
         case PlanType::CreateTable: {
             const auto& create = get<CreateTablePlan>(plan.details);
@@ -54,6 +54,8 @@ QueryResult ExecutionEngine::execute(const Statement& statement) {
         case PlanType::SeqScan: {
             return execute_select(get<SeqScanPlan>(plan.details), nullptr);
         }
+        case PlanType::IndexScan:
+            return execute_index_scan(get<IndexScanPlan>(plan.details));
         case PlanType::Filter: {
             const auto& filter = get<FilterPlan>(plan.details);
             const auto& scan = get<SeqScanPlan>(filter.child->details);
@@ -152,6 +154,34 @@ QueryResult ExecutionEngine::execute_select(const SeqScanPlan& scan,
         }
         result.rows.push_back(std::move(row));
     }
+    return result;
+}
+
+QueryResult ExecutionEngine::execute_index_scan(const IndexScanPlan& scan) {
+    const optional<IndexMetadata> metadata = catalog_.get_index(scan.index_name);
+    if (!metadata.has_value()) throw runtime_error("Index metadata is missing: " + scan.index_name);
+    const optional<RID> rid = index_manager_->search(scan.table_name, metadata->column_name, scan.key);
+    if (!rid.has_value()) return QueryResult{};
+
+    TableHeap& heap = table(scan.table_name);
+    const optional<Tuple> tuple = heap.get_tuple(*rid);
+    if (!tuple.has_value()) return QueryResult{};
+    QueryResult result;
+    if (scan.columns.size() == 1 && scan.columns.front() == "*") {
+        for (size_t index = 0; index < heap.schema().column_count(); ++index)
+            result.columns.push_back(heap.schema().column(index).name());
+    } else {
+        for (const string& column_name : scan.columns)
+            result.columns.push_back(heap.schema().column(heap.schema().column_index(column_name)).name());
+    }
+    vector<Value> row;
+    if (scan.columns.size() == 1 && scan.columns.front() == "*") {
+        row = tuple->values();
+    } else {
+        for (const string& column_name : scan.columns)
+            row.push_back(tuple->value_at(heap.schema().column_index(column_name)));
+    }
+    result.rows.push_back(std::move(row));
     return result;
 }
 

@@ -5,6 +5,7 @@
 #include "minidb/tuple.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -21,6 +22,9 @@ public:
     void remove_tuple(const std::string& table_name, const Tuple& tuple, const RID& rid);
     void update_tuple(const std::string& table_name, const Tuple& old_tuple,
                       const Tuple& new_tuple, const RID& rid);
+    [[nodiscard]] std::optional<RID> search(const std::string& table_name,
+                                            const std::string& column_name,
+                                            std::int32_t key) const;
 
 private:
     [[nodiscard]] std::int32_t key_for(const IndexMetadata& metadata,
