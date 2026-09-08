@@ -14,6 +14,9 @@ add_executable(minidb
     src/disk_manager.cpp
     src/lru_replacer.cpp
     src/buffer_pool_manager.cpp
+    src/value.cpp
+    src/schema.cpp
+    src/tuple.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -94,3 +97,22 @@ target_include_directories(minidb_buffer_pool_tests PRIVATE
 )
 
 add_test(NAME buffer_pool_manager COMMAND minidb_buffer_pool_tests)
+
+add_executable(minidb_tuple_tests
+    src/value.cpp
+    src/schema.cpp
+    src/tuple.cpp
+    tests/tuple_test.cpp
+)
+
+target_compile_options(minidb_tuple_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_tuple_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME tuple_serialization COMMAND minidb_tuple_tests)
