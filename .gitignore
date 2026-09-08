@@ -1,6 +1,8 @@
 # CMake and build output
 /build/
 /cmake-build-*/
+*.db
+*.db.catalog
 
 # Generated build metadata
 compile_commands.json
