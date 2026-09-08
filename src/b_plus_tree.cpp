@@ -1,6 +1,7 @@
 #include "minidb/b_plus_tree.h"
 
 #include <algorithm>
+#include <cstring>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -103,6 +104,26 @@ PageId find_child(const Page& page, int32_t key) {
     return child;
 }
 
+bool remove_child(Page& page, PageId child) {
+    const uint16_t count = read_uint16(page, kKeyCountOffset);
+    if (count == 0) return false;
+    if (internal_first_child(page) == child) {
+        write_int32(page, kInternalHeaderSize - sizeof(PageId), internal_child(page, 0));
+        for (size_t index = 0; index + 1 < count; ++index)
+            write_internal_entry(page, index, internal_key(page, index + 1), internal_child(page, index + 1));
+        write_uint16(page, kKeyCountOffset, static_cast<uint16_t>(count - 1));
+        return true;
+    }
+    for (size_t index = 0; index < count; ++index) {
+        if (internal_child(page, index) != child) continue;
+        for (size_t shift = index; shift + 1 < count; ++shift)
+            write_internal_entry(page, shift, internal_key(page, shift + 1), internal_child(page, shift + 1));
+        write_uint16(page, kKeyCountOffset, static_cast<uint16_t>(count - 1));
+        return true;
+    }
+    return false;
+}
+
 }  // namespace
 
 BPlusTree::BPlusTree(BufferPoolManager& buffer_pool, PageId root_page_id)
@@ -179,6 +200,71 @@ bool BPlusTree::insert(int32_t key, RID rid) {
     write_internal_entry(*internal, insertion, right_entries.front().key, right_id);
     write_uint16(*internal, kKeyCountOffset, static_cast<uint16_t>(count + 1));
     const bool internal_unpinned = buffer_pool_.unpin_page(root_page_id_, true); (void)internal_unpinned;
+    return true;
+}
+
+bool BPlusTree::remove(int32_t key) {
+    Page* root = buffer_pool_.fetch_page(root_page_id_);
+    if (root == nullptr) return false;
+    validate_node(*root);
+
+    if (root->data()[kNodeTypeOffset] == byte{1}) {
+        vector<Entry> entries = read_leaf_entries(*root);
+        const auto position = lower_bound(entries.begin(), entries.end(), key,
+                                          [](Entry entry, int32_t value) { return entry.key < value; });
+        if (position == entries.end() || position->key != key) {
+            const bool unpinned = buffer_pool_.unpin_page(root_page_id_, false); (void)unpinned;
+            return false;
+        }
+        entries.erase(position);
+        write_leaf_entries(*root, entries, kInvalidPageId);
+        const bool unpinned = buffer_pool_.unpin_page(root_page_id_, true); (void)unpinned;
+        return true;
+    }
+
+    const PageId leaf_id = find_child(*root, key);
+    const bool root_unpinned = buffer_pool_.unpin_page(root_page_id_, false); (void)root_unpinned;
+    Page* leaf = buffer_pool_.fetch_page(leaf_id);
+    if (leaf == nullptr) return false;
+    vector<Entry> entries = read_leaf_entries(*leaf);
+    const auto position = lower_bound(entries.begin(), entries.end(), key,
+                                      [](Entry entry, int32_t value) { return entry.key < value; });
+    if (position == entries.end() || position->key != key) {
+        const bool unpinned = buffer_pool_.unpin_page(leaf_id, false); (void)unpinned;
+        return false;
+    }
+    entries.erase(position);
+    const bool leaf_unpinned = buffer_pool_.unpin_page(leaf_id, true); (void)leaf_unpinned;
+    if (!entries.empty()) {
+        Page* updated_leaf = buffer_pool_.fetch_page(leaf_id);
+        const int32_t next = read_int32(*updated_leaf, kNextLeafOffset);
+        write_leaf_entries(*updated_leaf, entries, next);
+        const bool updated_unpinned = buffer_pool_.unpin_page(leaf_id, true); (void)updated_unpinned;
+        return true;
+    }
+
+    Page* internal = buffer_pool_.fetch_page(root_page_id_);
+    validate_node(*internal);
+    if (!remove_child(*internal, leaf_id)) {
+        const bool unpinned = buffer_pool_.unpin_page(root_page_id_, false); (void)unpinned;
+        return true;
+    }
+    const uint16_t remaining_separators = read_uint16(*internal, kKeyCountOffset);
+    if (remaining_separators == 0) {
+        const PageId only_child = internal_first_child(*internal);
+        Page* child = buffer_pool_.fetch_page(only_child);
+        if (child == nullptr) {
+            const bool unpinned = buffer_pool_.unpin_page(root_page_id_, false); (void)unpinned;
+            return true;
+        }
+        std::memcpy(internal->data(), child->data(), kPageSize);
+        const bool child_unpinned = buffer_pool_.unpin_page(only_child, false); (void)child_unpinned;
+        const bool root_dirty = buffer_pool_.unpin_page(root_page_id_, true); (void)root_dirty;
+        const bool deleted = buffer_pool_.delete_page(only_child); (void)deleted;
+    } else {
+        const bool root_dirty = buffer_pool_.unpin_page(root_page_id_, true); (void)root_dirty;
+    }
+    const bool deleted_leaf = buffer_pool_.delete_page(leaf_id); (void)deleted_leaf;
     return true;
 }
 

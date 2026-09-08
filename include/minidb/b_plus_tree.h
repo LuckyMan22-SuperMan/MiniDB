@@ -17,6 +17,7 @@ public:
     [[nodiscard]] static std::unique_ptr<BPlusTree> create(BufferPoolManager& buffer_pool,
                                                             PageId& root_page_id);
     [[nodiscard]] bool insert(std::int32_t key, RID rid);
+    [[nodiscard]] bool remove(std::int32_t key);
     [[nodiscard]] std::optional<RID> search(std::int32_t key) const;
     [[nodiscard]] std::size_t size() const;
     [[nodiscard]] PageId root_page_id() const noexcept;

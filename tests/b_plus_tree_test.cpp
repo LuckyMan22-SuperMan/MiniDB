@@ -31,17 +31,29 @@ int main() {
         assert(tree->size() == 500);
         assert(tree->search(0)->page_id == 100);
         assert(tree->search(499)->page_id == 599);
+        for (int32_t key = 0; key < 250; ++key) {
+            assert(tree->remove(key));
+        }
+        assert(tree->size() == 250);
+        assert(!tree->search(0).has_value());
+        assert(tree->search(250)->page_id == 350);
         buffer_pool.flush_all_pages();
     }
 
     {
         minidb::DiskManager disk_manager(database_path);
         minidb::BufferPoolManager buffer_pool(disk_manager, 8);
-        const minidb::BPlusTree tree(buffer_pool, root_page_id);
-        assert(tree.size() == 500);
-        assert(tree.search(0)->page_id == 100);
-        assert(tree.search(30)->page_id == 8);
-        assert(tree.search(10)->slot_id == 1);
+        minidb::BPlusTree tree(buffer_pool, root_page_id);
+        assert(tree.size() == 250);
+        assert(!tree.search(0).has_value());
+        assert(tree.search(250)->page_id == 350);
+        assert(tree.search(499)->slot_id == 1);
+        for (int32_t key = 250; key < 500; ++key) {
+            assert(tree.remove(key));
+        }
+        assert(tree.size() == 0);
+        assert(tree.insert(42, minidb::RID{7, 7}));
+        assert(tree.search(42)->page_id == 7);
     }
 
     filesystem::remove(database_path);
