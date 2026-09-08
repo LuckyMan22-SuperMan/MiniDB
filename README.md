@@ -4,7 +4,7 @@ MiniDB is an educational relational database management system implemented from 
 
 ## Current Status
 
-Phase 3 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, and the first record layer: `Value`, `Column`, `Schema`, `Tuple`, and `RID`. Slotted table pages and higher-level storage layers are not implemented yet.
+Phase 4 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, and `TableHeap`. SQL parsing and catalog-backed table discovery are not implemented yet.
 
 Planned components include:
 
@@ -42,7 +42,9 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-The Phase 1 disk-manager test checks page allocation, persistence across a close and reopen, page counting, and invalid page rejection. Phase 2 tests check LRU ordering, pinned-page protection, dirty-page write-back, eviction, and deletion. Phase 3 tests check schema lookup, typed values, tuple serialization round trips, RIDs, and malformed-data rejection.
+The Phase 1 disk-manager test checks page allocation, persistence across a close and reopen, page counting, and invalid page rejection. Phase 2 tests check LRU ordering, pinned-page protection, dirty-page write-back, eviction, and deletion. Phase 3 tests check schema lookup, typed values, tuple serialization round trips, RIDs, and malformed-data rejection. Phase 4 tests check slotted-page insertion, tuple deletion, multi-page heap growth, RID lookup, and flushing.
+
+`TableHeap` currently keeps its page list in memory. The catalog phase will add persistent table metadata and page discovery across restarts.
 
 ## Run
 

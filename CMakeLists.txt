@@ -17,6 +17,8 @@ add_executable(minidb
     src/value.cpp
     src/schema.cpp
     src/tuple.cpp
+    src/table_page.cpp
+    src/table_heap.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -116,3 +118,27 @@ target_include_directories(minidb_tuple_tests PRIVATE
 )
 
 add_test(NAME tuple_serialization COMMAND minidb_tuple_tests)
+
+add_executable(minidb_table_heap_tests
+    src/disk_manager.cpp
+    src/lru_replacer.cpp
+    src/buffer_pool_manager.cpp
+    src/value.cpp
+    src/schema.cpp
+    src/tuple.cpp
+    src/table_page.cpp
+    src/table_heap.cpp
+    tests/table_heap_test.cpp
+)
+
+target_compile_options(minidb_table_heap_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_table_heap_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME table_heap COMMAND minidb_table_heap_tests)
