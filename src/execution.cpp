@@ -10,7 +10,8 @@ namespace minidb {
 using namespace std;
 
 ExecutionEngine::ExecutionEngine(BufferPoolManager& buffer_pool, Catalog& catalog)
-    : buffer_pool_(buffer_pool), catalog_(catalog) {
+        : buffer_pool_(buffer_pool), catalog_(catalog),
+            index_manager_(make_unique<IndexManager>(buffer_pool_, catalog_)) {
     for (const string& name : catalog_.table_names()) {
         const optional<TableMetadata> metadata = catalog_.get_table(name);
         if (metadata.has_value()) {
@@ -38,6 +39,13 @@ QueryResult ExecutionEngine::execute(const Statement& statement) {
             if (!rid.has_value()) {
                 throw runtime_error("Unable to insert tuple");
             }
+            try {
+                index_manager_->insert_tuple(insert.table_name, Tuple(insert.values), *rid);
+            } catch (...) {
+                const bool rolled_back = heap.delete_tuple(*rid);
+                (void)rolled_back;
+                throw;
+            }
             const bool updated_catalog = catalog_.update_table_pages(insert.table_name,
                                                                        heap.page_ids());
             (void)updated_catalog;
@@ -55,8 +63,18 @@ QueryResult ExecutionEngine::execute(const Statement& statement) {
             return execute_update(get<UpdatePlan>(plan.details));
         case PlanType::Delete:
             return execute_delete(get<DeletePlan>(plan.details));
-        case PlanType::CreateIndex:
-            throw logic_error("CREATE INDEX is not executable in Phase 11");
+        case PlanType::CreateIndex: {
+            const auto& create_index = get<CreateIndexPlan>(plan.details);
+            if (!index_manager_->create_index(create_index.index_name, create_index.table_name,
+                                              create_index.column_name)) {
+                throw invalid_argument("Index already exists: " + create_index.index_name);
+            }
+            TableHeap& heap = table(create_index.table_name);
+            for (const TableRecord& record : heap.scan_records()) {
+                index_manager_->insert_tuple(create_index.table_name, record.tuple, record.rid);
+            }
+            return QueryResult{ {}, {}, 0 };
+        }
     }
     throw logic_error("Unknown plan type");
 }
@@ -72,9 +90,11 @@ QueryResult ExecutionEngine::execute_update(const UpdatePlan& update) {
         }
         vector<Value> values = record.tuple.values();
         values[column_index] = update.value;
-        if (!heap.update_tuple(record.rid, Tuple(std::move(values)))) {
+        const Tuple updated_tuple(std::move(values));
+        if (!heap.update_tuple(record.rid, updated_tuple)) {
             throw runtime_error("Updated tuple is larger than its existing slot");
         }
+        index_manager_->update_tuple(update.table_name, record.tuple, updated_tuple, record.rid);
         ++affected_rows;
     }
     return QueryResult{ {}, {}, affected_rows };
@@ -89,6 +109,7 @@ QueryResult ExecutionEngine::execute_delete(const DeletePlan& delete_plan) {
             continue;
         }
         if (heap.delete_tuple(record.rid)) {
+            index_manager_->remove_tuple(delete_plan.table_name, record.tuple, record.rid);
             ++affected_rows;
         }
     }

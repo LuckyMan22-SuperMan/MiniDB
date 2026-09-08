@@ -10,7 +10,7 @@ namespace minidb {
 namespace {
 
 constexpr std::uint32_t kCatalogMagic = 0x4D444243;
-constexpr std::uint32_t kCatalogVersion = 1;
+constexpr std::uint32_t kCatalogVersion = 2;
 constexpr std::uint32_t kMaxCatalogEntries = 1'000'000;
 
 void write_uint32(std::ostream& output, std::uint32_t value) {
@@ -109,8 +109,37 @@ bool Catalog::update_table_pages(const std::string& name, std::vector<PageId> pa
     return false;
 }
 
+bool Catalog::create_index(IndexMetadata metadata) {
+    if (metadata.name.empty() || get_index(metadata.name).has_value()) {
+        return false;
+    }
+    indexes_.push_back(std::move(metadata));
+    save();
+    return true;
+}
+
+std::optional<IndexMetadata> Catalog::get_index(const std::string& name) const {
+    for (const IndexMetadata& index : indexes_) {
+        if (index.name == name) {
+            return index;
+        }
+    }
+    return std::nullopt;
+}
+
+std::vector<IndexMetadata> Catalog::indexes_for_table(const std::string& table_name) const {
+    std::vector<IndexMetadata> indexes;
+    for (const IndexMetadata& index : indexes_) {
+        if (index.table_name == table_name) {
+            indexes.push_back(index);
+        }
+    }
+    return indexes;
+}
+
 void Catalog::load() {
     tables_.clear();
+    indexes_.clear();
     next_table_id_ = 0;
 
     std::ifstream input(catalog_path_, std::ios::binary);
@@ -118,7 +147,11 @@ void Catalog::load() {
         return;
     }
 
-    if (read_uint32(input) != kCatalogMagic || read_uint32(input) != kCatalogVersion) {
+    if (read_uint32(input) != kCatalogMagic) {
+        throw std::runtime_error("Catalog has an unsupported format");
+    }
+    const std::uint32_t version = read_uint32(input);
+    if (version != 1 && version != kCatalogVersion) {
         throw std::runtime_error("Catalog has an unsupported format");
     }
     next_table_id_ = read_uint32(input);
@@ -160,6 +193,18 @@ void Catalog::load() {
         tables_.push_back(TableMetadata{table_id, name, Schema(std::move(columns)),
                                         std::move(page_ids)});
     }
+
+    if (version == kCatalogVersion) {
+        const std::uint32_t index_count = read_uint32(input);
+        if (index_count > kMaxCatalogEntries) {
+            throw std::runtime_error("Catalog contains too many indexes");
+        }
+        for (std::uint32_t index_number = 0; index_number < index_count; ++index_number) {
+            indexes_.push_back(IndexMetadata{read_string(input), read_string(input),
+                                             read_string(input),
+                                             static_cast<PageId>(read_uint32(input))});
+        }
+    }
 }
 
 void Catalog::save() const {
@@ -186,6 +231,13 @@ void Catalog::save() const {
         for (const PageId page_id : table.page_ids) {
             write_uint32(output, static_cast<std::uint32_t>(page_id));
         }
+    }
+    write_uint32(output, static_cast<std::uint32_t>(indexes_.size()));
+    for (const IndexMetadata& index : indexes_) {
+        write_string(output, index.name);
+        write_string(output, index.table_name);
+        write_string(output, index.column_name);
+        write_uint32(output, static_cast<std::uint32_t>(index.root_page_id));
     }
     output.close();
     if (!output) {

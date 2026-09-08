@@ -2,6 +2,7 @@
 
 #include "minidb/buffer_pool_manager.h"
 #include "minidb/catalog.h"
+#include "minidb/index_manager.h"
 #include "minidb/plan.h"
 #include "minidb/table_heap.h"
 
@@ -40,6 +41,7 @@ private:
 
     BufferPoolManager& buffer_pool_;
     Catalog& catalog_;
+    std::unique_ptr<IndexManager> index_manager_;
     std::unordered_map<std::string, std::unique_ptr<TableHeap>> tables_;
 };
 

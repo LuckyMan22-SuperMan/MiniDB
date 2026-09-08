@@ -25,6 +25,7 @@ add_executable(minidb
     src/planner.cpp
     src/execution.cpp
     src/b_plus_tree.cpp
+    src/index_manager.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -239,6 +240,8 @@ add_executable(minidb_execution_tests
     src/parser.cpp
     src/planner.cpp
     src/execution.cpp
+    src/b_plus_tree.cpp
+    src/index_manager.cpp
     tests/execution_test.cpp
 )
 
@@ -273,3 +276,34 @@ target_include_directories(minidb_b_plus_tree_tests PRIVATE
 )
 
 add_test(NAME b_plus_tree COMMAND minidb_b_plus_tree_tests)
+
+add_executable(minidb_index_manager_tests
+    src/disk_manager.cpp
+    src/lru_replacer.cpp
+    src/buffer_pool_manager.cpp
+    src/value.cpp
+    src/schema.cpp
+    src/tuple.cpp
+    src/table_page.cpp
+    src/table_heap.cpp
+    src/catalog.cpp
+    src/lexer.cpp
+    src/parser.cpp
+    src/planner.cpp
+    src/execution.cpp
+    src/b_plus_tree.cpp
+    src/index_manager.cpp
+    tests/index_manager_test.cpp
+)
+
+target_compile_options(minidb_index_manager_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_index_manager_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME index_manager COMMAND minidb_index_manager_tests)
