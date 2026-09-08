@@ -1,0 +1,19 @@
+# CMake and build output
+/build/
+/cmake-build-*/
+
+# Generated build metadata
+compile_commands.json
+CMakeCache.txt
+CTestTestfile.cmake
+cmake_install.cmake
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+
+# macOS
+.DS_Store
+
+# IDE files
+.vscode/*.user
