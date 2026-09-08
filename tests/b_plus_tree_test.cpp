@@ -12,7 +12,7 @@ int main() {
     minidb::PageId root_page_id = minidb::kInvalidPageId;
     {
         minidb::DiskManager disk_manager(database_path);
-        minidb::BufferPoolManager buffer_pool(disk_manager, 2);
+        minidb::BufferPoolManager buffer_pool(disk_manager, 8);
         const auto tree = minidb::BPlusTree::create(buffer_pool, root_page_id);
         assert(tree != nullptr);
         assert(tree->insert(20, minidb::RID{5, 2}));
@@ -23,14 +23,23 @@ int main() {
         assert(tree->search(10)->page_id == 3);
         assert(tree->search(20)->slot_id == 2);
         assert(!tree->search(99).has_value());
+        for (int32_t key = 0; key < 500; ++key) {
+            if (key != 10 && key != 20 && key != 30) {
+                assert(tree->insert(key, minidb::RID{key + 100, 1}));
+            }
+        }
+        assert(tree->size() == 500);
+        assert(tree->search(0)->page_id == 100);
+        assert(tree->search(499)->page_id == 599);
         buffer_pool.flush_all_pages();
     }
 
     {
         minidb::DiskManager disk_manager(database_path);
-        minidb::BufferPoolManager buffer_pool(disk_manager, 2);
+        minidb::BufferPoolManager buffer_pool(disk_manager, 8);
         const minidb::BPlusTree tree(buffer_pool, root_page_id);
-        assert(tree.size() == 3);
+        assert(tree.size() == 500);
+        assert(tree.search(0)->page_id == 100);
         assert(tree.search(30)->page_id == 8);
         assert(tree.search(10)->slot_id == 1);
     }
