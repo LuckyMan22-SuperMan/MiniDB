@@ -41,4 +41,8 @@ std::size_t Schema::column_index(const std::string& name) const {
     throw std::out_of_range("Unknown column: " + name);
 }
 
+const std::vector<Column>& Schema::columns() const noexcept {
+    return columns_;
+}
+
 }  // namespace minidb

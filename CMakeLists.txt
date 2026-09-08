@@ -19,6 +19,7 @@ add_executable(minidb
     src/tuple.cpp
     src/table_page.cpp
     src/table_heap.cpp
+    src/catalog.cpp
 )
 
 target_compile_options(minidb PRIVATE
@@ -142,3 +143,22 @@ target_include_directories(minidb_table_heap_tests PRIVATE
 )
 
 add_test(NAME table_heap COMMAND minidb_table_heap_tests)
+
+add_executable(minidb_catalog_tests
+    src/value.cpp
+    src/schema.cpp
+    src/catalog.cpp
+    tests/catalog_test.cpp
+)
+
+target_compile_options(minidb_catalog_tests PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(minidb_catalog_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_test(NAME catalog COMMAND minidb_catalog_tests)

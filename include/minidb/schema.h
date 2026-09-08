@@ -27,6 +27,7 @@ public:
     [[nodiscard]] std::size_t column_count() const noexcept;
     [[nodiscard]] const Column& column(std::size_t index) const;
     [[nodiscard]] std::size_t column_index(const std::string& name) const;
+    [[nodiscard]] const std::vector<Column>& columns() const noexcept;
 
 private:
     std::vector<Column> columns_;
