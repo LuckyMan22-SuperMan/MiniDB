@@ -187,6 +187,11 @@ unique_ptr<Expression> Parser::parse_comparison() {
 }
 
 unique_ptr<Expression> Parser::parse_primary() {
+    if (match(TokenType::LeftParen)) {
+        auto expression = parse_expression();
+        consume(TokenType::RightParen, "')'");
+        return expression;
+    }
     if (check(TokenType::Identifier)) {
         return make_unique<Expression>(ColumnReference{consume(TokenType::Identifier, "column name").lexeme});
     }

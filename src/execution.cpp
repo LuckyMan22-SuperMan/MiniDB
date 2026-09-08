@@ -110,7 +110,7 @@ bool ExecutionEngine::evaluate_predicate(const Expression& expression,
             return compare_values(evaluate_value(*node.left, tuple, schema), node.op,
                                   evaluate_value(*node.right, tuple, schema));
         } else {
-            throw invalid_argument("WHERE expression must be a comparison or logical expression");
+            return evaluate_value(expression, tuple, schema).as_boolean();
         }
     }, expression.node);
 }
