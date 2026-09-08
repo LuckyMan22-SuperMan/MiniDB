@@ -4,7 +4,7 @@ MiniDB is an educational relational database management system implemented from 
 
 ## Current Status
 
-Phase 16 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, `TableHeap`, a persistent catalog, the SQL lexer, a typed recursive-descent parser with AST nodes, typed plan nodes including `IndexScan`, execution for `CREATE TABLE`, `INSERT`, sequential or indexed `SELECT`, robust `WHERE` filtering, `UPDATE`, `DELETE`, and a persistent B+ Tree with leaf splitting, deletion, empty-leaf cleanup, root collapse, and Index Manager synchronization. The interactive CLI and general internal-node rebalancing are not implemented yet.
+Phase 17 implements the fixed-size `Page` abstraction, file-backed `DiskManager`, bounded `BufferPoolManager`, `LRUReplacer`, the record layer, slotted `TablePage`, `TableHeap`, a persistent catalog, the SQL lexer, a typed recursive-descent parser with AST nodes, typed plan nodes including `IndexScan`, execution for `CREATE TABLE`, `INSERT`, sequential or indexed `SELECT`, robust `WHERE` filtering, `UPDATE`, `DELETE`, a persistent B+ Tree with leaf splitting, deletion, empty-leaf cleanup, root collapse, Index Manager synchronization, and an interactive SQL CLI. General internal-node rebalancing remains future work.
 
 Planned components include:
 
@@ -56,6 +56,26 @@ Updates currently require the replacement tuple to fit in the existing slot; lar
 ./build/minidb
 ```
 
+You can pass a database path to keep separate databases isolated:
+
+```sh
+./build/minidb ./students.db
+```
+
+Example interactive session:
+
+```sql
+CREATE TABLE students (id INT, name VARCHAR, active BOOLEAN);
+INSERT INTO students VALUES (1, 'Lakshya', TRUE);
+CREATE INDEX idx_students_id ON students(id);
+SELECT name FROM students WHERE id = 1;
+UPDATE students SET name = 'A' WHERE id = 1;
+DELETE FROM students WHERE id = 1;
+.tables
+.schema students
+.exit
+```
+
 Expected output:
 
 ```text
@@ -70,7 +90,7 @@ ctest --test-dir build --output-on-failure
 
 ## Debug in VS Code
 
-Open the project folder in VS Code. Configure the project with the build command above, then launch `build/minidb` under the C++ extension using LLDB. The executable currently has no database behavior; it only confirms that the C++20 application target is wired correctly.
+Open the project folder in VS Code. Configure the project with the build command above, then launch `build/minidb` under the C++ extension using LLDB. The CLI accepts one SQL statement per input line and persists data in the selected database file plus its `.catalog` metadata file.
 
 ## Development Approach
 
